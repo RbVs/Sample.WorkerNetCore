@@ -2,7 +2,6 @@
 
 Demonstriert, wie ein einfacher .NET Core Workerservice erstellt und als Service unter Windows installiert wird. 
 
-
 #### Nuget Dependencies
 
 > * Microsoft.Extensions.Hosting" Version="3.1.8"
@@ -14,7 +13,7 @@ Demonstriert, wie ein einfacher .NET Core Workerservice erstellt und als Service
 
 Überschreiben des Logger mit Serilog.
 
-```dotnet
+```csharp
 public static void Main(string[] args)
 {
    Log.Logger = new LoggerConfiguration()
@@ -29,7 +28,7 @@ public static void Main(string[] args)
 ```
 
 UseSerilog hinzufügen.
-```dotnet
+```csharp
 private static IHostBuilder CreateHostBuilder(string[] args)
 {
    return Host.CreateDefaultBuilder(args)
@@ -43,45 +42,45 @@ private static IHostBuilder CreateHostBuilder(string[] args)
 ```
 #### Worker Funktionen 
 Die `StartAsync()` Methode kann verwendet werden, um ein Event beim initialen starten auszuführen.
-```dotnet
-        public override Task StartAsync(CancellationToken cancellationToken)
-        {
-            client = new HttpClient();
-            _logger.LogInformation("Worker is starting");
-            return base.StartAsync(cancellationToken);
-        }
+```csharp
+public override Task StartAsync(CancellationToken cancellationToken)
+{
+    client = new HttpClient();
+    _logger.LogInformation("Worker is starting");
+    return base.StartAsync(cancellationToken);
+}
 ```
 Die `StopAsync()` Methode kann verwendet werden, um ein Event vor dem Beenden auszuführen.
-```dotnet
-        public override Task StopAsync(CancellationToken cancellationToken)
-        {
-            client.Dispose();
-            _logger.LogInformation("Worker is shutting down");
-            return base.StopAsync(cancellationToken);
-        }
+```csharp
+public override Task StopAsync(CancellationToken cancellationToken)
+{
+    client.Dispose();
+    _logger.LogInformation("Worker is shutting down");
+    return base.StopAsync(cancellationToken);
+}
 ```
 Die `ExecuteAsync` Method wird während der gesamten Laufzeit ausgeführt. Mit `Task.Delay()` kann die Ausführung verzögert bzw. zur periodischen Ausführung genutzt werden.
-```dotnet
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+```csharp
+protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+{
+    var uri = "https://google.com";
+
+    while (!stoppingToken.IsCancellationRequested)
+    {
+        var result = await client.GetAsync(uri, stoppingToken);
+
+        if (result.IsSuccessStatusCode)
         {
-            var uri = "https://google.com";
-
-            while (!stoppingToken.IsCancellationRequested)
-            {
-                var result = await client.GetAsync(uri, stoppingToken);
-
-                if (result.IsSuccessStatusCode)
-                {
-                    _logger.LogInformation($"{uri} is up and running!");
-                }
-                else
-                {
-                    _logger.LogInformation($"{uri} is down!");
-                }
-                
-                await Task.Delay(5000, stoppingToken);
-            }
+            _logger.LogInformation($"{uri} is up and running!");
         }
+        else
+        {
+            _logger.LogInformation($"{uri} is down!");
+        }
+                
+        await Task.Delay(5000, stoppingToken);
+    }
+}
 ```
 
 
